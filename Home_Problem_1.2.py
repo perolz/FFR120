@@ -12,7 +12,6 @@ if __name__=="__main__":
     susceptibles=population[:,initialNumberOfInfected:].tolist()
     recovered=[[],[]]
 
-    #(infected, susceptibles, recovered)=diseaseSpreading(infected, susceptibles,recovered,transmissionRate,recoveryRate)
     plt.ion()
 
     time=[0]
