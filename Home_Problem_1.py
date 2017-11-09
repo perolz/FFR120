@@ -114,7 +114,7 @@ if __name__=="__main__":
         numberOfSusceptible.append(len(susceptibles[0]))
         numberOfInfected.append(len(infected[0]))
         numberOfRecovered.append(len(recovered[0]))
-        if time[-1]%1==0:
+        if time[-1]%100==0:
             h1.set_xdata(susceptibles[0])
             h1.set_ydata(susceptibles[1])
             h2.set_xdata(infected[0])
@@ -132,7 +132,7 @@ if __name__=="__main__":
             #writer.grab_frame()
 
             plt.draw()
-            plt.pause(0.01)
+            plt.pause(0.1)
     h1.set_xdata(susceptibles[0])
     h1.set_ydata(susceptibles[1])
     h2.set_xdata(infected[0])
