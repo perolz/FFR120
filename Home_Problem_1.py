@@ -67,7 +67,7 @@ def diseaseSpreading(infected,susceptibles,recovered,transmissionRate,recoveryRa
 
 if __name__=="__main__":
     recoveryRate=0.005
-    populationSize=1000
+    populationSize=100
     gridSize=100
     transmissionRate = 0.2
     diffusionRate=0.3
@@ -114,7 +114,7 @@ if __name__=="__main__":
         numberOfSusceptible.append(len(susceptibles[0]))
         numberOfInfected.append(len(infected[0]))
         numberOfRecovered.append(len(recovered[0]))
-        if time[-1]%100==0:
+        if time[-1]%1==0:
             h1.set_xdata(susceptibles[0])
             h1.set_ydata(susceptibles[1])
             h2.set_xdata(infected[0])
