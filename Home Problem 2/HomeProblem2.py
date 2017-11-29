@@ -5,7 +5,8 @@ from matplotlib import colors
 import os
 import shutil
 import pickle
-
+from scipy.optimize import curve_fit
+from scipy import interpolate
 
 def growForest(gridSize, forestGrid, p):
     tmp = np.random.rand(gridSize, gridSize)
@@ -18,13 +19,6 @@ def growForest(gridSize, forestGrid, p):
 def updateModel(gridSize, forestGrid, p, f):
     newForest = growForest(gridSize, forestGrid, p)
 
-    # for i in range(gridSize):
-    #     for j in range(gridSize):
-    #
-    #         if forestGrid<1:
-    #             r=np.random.rand()
-    #             if r<p:
-    #                 tmpGrid[i][j]=1
     fire = []
     r = np.random.rand()
     if f > r:
@@ -45,7 +39,7 @@ def fireOutbreak(newForest, gridSize, fireStartingPoint):
     while len(nodes) > 0:
         tmpNodes = []
         for i in nodes:
-            neighbourNode = neighbours(i[0], i[1])
+            neighbourNode = neighbours(i[0], i[1],gridSize)
             for j in neighbourNode:
                 if (visitedNodes[j[0]][j[1]] == 0 and newForest[j[0]][j[1]] == 1):
                     fire[j[0]][j[1]] = 1
@@ -54,16 +48,14 @@ def fireOutbreak(newForest, gridSize, fireStartingPoint):
                 elif (visitedNodes[j[0]][j[1]] == 0):
                     visitedNodes[j[0]][j[1]] = 1
 
-        # plt.scatter(np.array(nodes).T[0],np.array(nodes).T[1])
-        # plt.show()
         nodes = tmpNodes
     return fire
 
 
-def neighbours(x, y):
+def neighbours(x, y,gridSize):
     tmp = np.array([(x - 1, y), (x, y - 1), (x + 1, y), (x, y + 1)])
-    tmp[tmp == 128] = 0
-    tmp[tmp == -1] = 127
+    tmp[tmp == gridSize] = 0
+    tmp[tmp == -1] = gridSize-1
 
     return tmp
 
@@ -168,24 +160,43 @@ def homeWork2():
 
 
 def reprintData():
-    with open('tmp.pickle','rb') as f:
-        (fireSize, fireSizeReference, tspace) = pickle.load(f)
+    with open('task4.pickle','rb') as f:
+         exponents= pickle.load(f)
 
+    # fig = plt.figure(figsize=(10, 10))
+    #
+    # ax = fig.add_subplot(1, 1, 1)
+    # ax.set_title('Sumulation with f=%1.2f and p=%1.3f' % (0.3, 0.001))
+    # plt.xlabel('Relative fire size')
+    # plt.ylabel('cCDF')
+    #
+    # line1, = plt.loglog(fireSize, tspace, 'b', label='Fire normal')
+    # line2, = plt.loglog(fireSizeReference, tspace, 'r', label='Same forest density, but no fire before')
+    # plt.legend(handles=[line1, line2])
+    # plt.savefig('Images_to_show/Taskb.png')
+    # plt.show()
+
+    gridSize=np.array([8,16,32,64,128,256,512])
     fig = plt.figure(figsize=(10, 10))
 
     ax = fig.add_subplot(1, 1, 1)
-    ax.set_title('Sumulation with f=%1.2f and p=%1.3f' % (0.3, 0.001))
-    plt.xlabel('Relative fire size')
-    plt.ylabel('cCDF')
+    ax.set_title('Plot with different lattices and extrapolation')
+    plt.xlabel('1/N')
+    plt.ylabel(r'$\tau$')
 
-    line1, = plt.loglog(fireSize, tspace, 'b', label='Fire normal')
-    line2, = plt.loglog(fireSizeReference, tspace, 'r', label='Same forest density, but no fire before')
+    x = np.linspace(0, 0.13, 50)
+    f = interpolate.interp1d(1 / gridSize, exponents, fill_value='extrapolate')
+
+    tmp = f(0)
+    ax.text(0.04, 1.3, 'Value for when N goes to infinity=%1.3f' % tmp)
+    line1,=plt.plot(x, f(x),label='Extrapolation of values')
+    line2,=plt.plot(1 / gridSize, exponents,'bo',label='Values')
     plt.legend(handles=[line1, line2])
-    plt.savefig('Images_to_show/Taskb.png')
+    plt.savefig('Images_to_show/Taskd.png')
     plt.show()
 
-def func(x,a):
-    return x**a*10**-1.21
+def func(x,a,b):
+    return x**a*10**-b
 
 def homeWork3():
     with open('tmp.pickle','rb') as f:
@@ -200,11 +211,11 @@ def homeWork3():
     plt.ylabel('cCDF')
     line1, = plt.loglog(fireSize, tspace, 'b', label='Fire distribution')
 
-    line2,=plt.loglog(tspace[:int(len(tspace)/16)],func(tspace[:int(len(tspace)/16)],1-tau),'red',label='Data fitting')
-
+    line2,=plt.loglog(tspace[:int(len(tspace)/16)],func(tspace[:int(len(tspace)/16)],1-tau,1.21),'red',label='Data fitting')
+    popt, pcov = curve_fit(func, fireSize, tspace)
+    print(popt)
     plt.legend(handles=[line1,line2])
     plt.savefig('Images_to_show/Taskc_lines.png')
-
 
     X=np.zeros(len(fireSize))
     xmin=1
@@ -225,9 +236,53 @@ def homeWork3():
     plt.savefig('Images_to_show/Taskc_powerlaw_only_fitted.png')
     plt.show()
 
+def homeWork4():
+    gridSize=np.array([8,16,32,64,128,256,512])
+    exponents=[]
+    p=0.001
+    f=0.3
+    for j in gridSize:
+
+        forestGrid = np.zeros([j, j])
+        i = 1
+        fireSize = []
+        while (i < 100000):
+            forestGrid, fire = updateModel(j, forestGrid, p, f)
+            if len(fire) > 0:
+                fireSize.append(np.sum(np.sum(fire, axis=0)))
+                tmpBoealean = (2 > forestGrid + fire) & (forestGrid > 0)
+                forestGrid = np.where(tmpBoealean, 1, 0)
+            i = i + 1
+        fireSize = np.array(fireSize)
+        fireSize = -np.sort(-fireSize) / j ** 2
+        tspace = np.arange(1, len(fireSize) + 1) / len(fireSize)
+
+        popt, pcov = curve_fit(func, fireSize, tspace)
+        exponents.append(1-popt[0])
+    with open('task4.pickle','wb') as f:
+        pickle.dump(exponents,f)
+    exponents=np.array(exponents)
+
+    fig = plt.figure(figsize=(10, 10))
+
+    ax = fig.add_subplot(1, 1, 1)
+    plt.xlabel('1/N')
+    plt.ylabel(r'$\tau$')
+    plt.plot(1/gridSize,exponents)
+    x = np.linspace(0, 1, 50)
+    f = interpolate.interp1d(1 / gridSize, exponents, fill_value='extrapolate')
+
+    plt.plot(x,f(x))
+
+
+    ax.axis([0, 10, 0, 10])
+    plt.savefig('Images_to_show/Taskd.png')
+    plt.show()
+
 
 if __name__ == "__main__":
     #homeWork1()
     #homeWork2()
-    #reprintData()
-    homeWork3()
+    reprintData()
+    #homeWork3()
+    #homeWork4()
