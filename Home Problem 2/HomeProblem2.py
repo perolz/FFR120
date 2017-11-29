@@ -4,6 +4,7 @@ from matplotlib.colors import LinearSegmentedColormap
 from matplotlib import colors
 import os
 import shutil
+import pickle
 
 
 def growForest(gridSize, forestGrid, p):
@@ -67,7 +68,7 @@ def neighbours(x, y):
     return tmp
 
 def setup():
-    p = 0.005
+    p = 0.001
     f = 0.3
     gridSize = 128
     forestGrid = np.zeros([gridSize, gridSize])
@@ -120,7 +121,7 @@ def homeWork2():
     i = 1
     fireSize=[]
     fireSizeReference=[]
-    while (i<1000):
+    while (i<100000):
         forestGrid, fire = updateModel(gridSize, forestGrid, p, f)
         if len(fire) > 0:
             fireSize.append(np.sum(np.sum(fire, axis=0)))
@@ -152,15 +153,81 @@ def homeWork2():
     tspace=np.arange(1,len(fireSize)+1)/len(fireSize)
     print(len(fireSize))
     print(len(tspace))
+    with open("tmp.pickle", "wb") as f:
+        pickle.dump((fireSize, fireSizeReference,tspace), f)
 
     fig = plt.figure(figsize=(10, 10))
 
     ax = fig.add_subplot(1, 1, 1)
-    plt.suptitle('Sumulation with f=%1.2f and p=%1.3f' % (f, p))
-    plt.plot(tspace,fireSize)
-    plt.plot(tspace,fireSizeReference)
+    ax.set_title('Sumulation with f=%1.2f and p=%1.3f' % (f, p))
+    plt.xlabel('Relative fire size')
+    plt.ylabel('cCDF')
+    plt.loglog(fireSize,tspace,'b',label='Fire normal')
+    plt.loglog(fireSizeReference,tspace,'r',label='Reference if there was no fire before')
     plt.show()
+
+
+def reprintData():
+    with open('tmp.pickle','rb') as f:
+        (fireSize, fireSizeReference, tspace) = pickle.load(f)
+
+    fig = plt.figure(figsize=(10, 10))
+
+    ax = fig.add_subplot(1, 1, 1)
+    ax.set_title('Sumulation with f=%1.2f and p=%1.3f' % (0.3, 0.001))
+    plt.xlabel('Relative fire size')
+    plt.ylabel('cCDF')
+
+    line1, = plt.loglog(fireSize, tspace, 'b', label='Fire normal')
+    line2, = plt.loglog(fireSizeReference, tspace, 'r', label='Same forest density, but no fire before')
+    plt.legend(handles=[line1, line2])
+    plt.savefig('Images_to_show/Taskb.png')
+    plt.show()
+
+def func(x,a):
+    return x**a*10**-1.21
+
+def homeWork3():
+    with open('tmp.pickle','rb') as f:
+        (fireSize, fireSizeReference, tspace) = pickle.load(f)
+
+    tau = 1.3
+    fig = plt.figure(figsize=(10, 10))
+
+    ax = fig.add_subplot(1, 1, 1)
+    ax.set_title(r'Fitting of data with $\tau$=%1.2f' % (tau))
+    plt.xlabel('Relative fire size')
+    plt.ylabel('cCDF')
+    line1, = plt.loglog(fireSize, tspace, 'b', label='Fire distribution')
+
+    line2,=plt.loglog(tspace[:int(len(tspace)/16)],func(tspace[:int(len(tspace)/16)],1-tau),'red',label='Data fitting')
+
+    plt.legend(handles=[line1,line2])
+    plt.savefig('Images_to_show/Taskc_lines.png')
+
+
+    X=np.zeros(len(fireSize))
+    xmin=1
+    for i in range(len(fireSize)):
+        r=np.random.random()
+        X[i]=xmin*(1-r)**(-1/(tau-1))
+    X= -np.sort(-X) / (128 ** 2)
+    fig2 = plt.figure(figsize=(10, 10))
+
+    ax2 = fig.add_subplot(1, 1, 1)
+    ax2.set_title(r'Fitting of data with $\tau$=%1.2f' % (tau))
+    plt.xlabel('Relative fire size')
+    plt.ylabel('cCDF')
+    line1, = plt.loglog(fireSize, tspace, 'b', label='Fire distribution')
+    line2, = plt.loglog(X[round(len(X)/16):],tspace[round(len(X)/16):],'r',label='Synthetic power law data')
+
+    plt.legend(handles=[line1, line2])
+    plt.savefig('Images_to_show/Taskc_powerlaw_only_fitted.png')
+    plt.show()
+
 
 if __name__ == "__main__":
     #homeWork1()
-    homeWork2()
+    #homeWork2()
+    #reprintData()
+    homeWork3()
