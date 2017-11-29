@@ -67,7 +67,7 @@ def neighbours(x, y):
     return tmp
 
 def setup():
-    p = 0.001
+    p = 0.005
     f = 0.3
     gridSize = 128
     forestGrid = np.zeros([gridSize, gridSize])
@@ -116,15 +116,14 @@ def homeWork1():
 def homeWork2():
     gridSize,forestGrid,p,f=setup()
 
-    fig = plt.figure(figsize=(10, 10))
 
-    ax = fig.add_subplot(1, 1, 1)
-    plt.suptitle('Sumulation with f=%1.2f and p=%1.3f' % (f, p))
     i = 1
-    while (True):
+    fireSize=[]
+    fireSizeReference=[]
+    while (i<1000):
         forestGrid, fire = updateModel(gridSize, forestGrid, p, f)
-        if len(fire) >0:
-            fireSize = np.sum(np.sum(fire, axis=0))
+        if len(fire) > 0:
+            fireSize.append(np.sum(np.sum(fire, axis=0)))
             forestDensity = np.sum(np.sum(forestGrid, axis=0))
             newForest= np.zeros([gridSize, gridSize])
             while(np.sum(np.sum(newForest, axis=0))<forestDensity):
@@ -139,11 +138,28 @@ def homeWork2():
 
             newFire=fireOutbreak(newForest, gridSize, fireStartingPoint)
 
-            sizeOfFire=np.sum(np.sum(newFire,axis=0))
+            fireSizeReference.append( np.sum(np.sum(newFire,axis=0)))
+
             tmpBoealean = (2 > forestGrid+fire) & (forestGrid > 0)
 
             forestGrid = np.where(tmpBoealean, 1, 0)
         i = i + 1
+
+    fireSize=np.array(fireSize)
+    fireSize=-np.sort(-fireSize)/128**2
+    fireSizeReference=np.array(fireSizeReference)
+    fireSizeReference=-np.sort(-fireSizeReference)/(128**2)
+    tspace=np.arange(1,len(fireSize)+1)/len(fireSize)
+    print(len(fireSize))
+    print(len(tspace))
+
+    fig = plt.figure(figsize=(10, 10))
+
+    ax = fig.add_subplot(1, 1, 1)
+    plt.suptitle('Sumulation with f=%1.2f and p=%1.3f' % (f, p))
+    plt.plot(tspace,fireSize)
+    plt.plot(tspace,fireSizeReference)
+    plt.show()
 
 if __name__ == "__main__":
     #homeWork1()
