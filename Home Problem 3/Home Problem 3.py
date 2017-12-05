@@ -7,7 +7,7 @@ import networkx as nx
 import collections
 import scipy, scipy.stats,scipy.sparse
 
-def show_graph_with_labels(adjacency_matrix):
+def show_graph_with_labels(adjacency_matrix,p):
     rows,cols = np.where(adjacency_matrix == 1)
 
     nodes = set([n1 for n1 in rows] + [n2 for n2 in cols])
@@ -23,7 +23,8 @@ def show_graph_with_labels(adjacency_matrix):
 
     nodes = gr.nodes()
     degree = gr.degree()
-    print(nodes)
+    edges= gr.edges()
+    print(edges)
     color = [degree[n] for n in nodes]
     degree_sequence = sorted([d for n, d in gr.degree()], reverse=True)
     nx.draw(gr, pos, node_size=10, node_color=color, cmap='jet', with_label=True)
@@ -31,7 +32,6 @@ def show_graph_with_labels(adjacency_matrix):
     degreeCount = collections.Counter(degree_sequence)
     deg, cnt = zip(*degreeCount.items())
     numberOfNodes=len(adjacency_matrix)
-
 
     # plt.bar(deg, cnt, width=0.80, color='b')
     #
@@ -42,10 +42,7 @@ def show_graph_with_labels(adjacency_matrix):
     # ax.set_xticks([d + 0.4 for d in tmp])
     # ax.set_xticklabels(tmp)
 
-
-
-    #nx.draw_circular(gr, node_size=10,node_color=color,cmap='jet',with_label=True)
-    return fig,ax
+    return fig,ax,gr
 
 
 def ErdosRenyi(n,p):
@@ -71,19 +68,38 @@ def ErdosRenyi(n,p):
 
 def SmallWorld(n,p,c):
     edges = np.zeros([n, n])
-    np.fill_diagonal(edges, 0)
     for i in range(c):
         np.fill_diagonal(edges[i+1:],1)
         np.fill_diagonal(edges[:,i+1:],1)
         np.fill_diagonal(edges[-(i + 1):], 1)
         np.fill_diagonal(edges[:, -(i + 1):], 1)
-    show_graph_with_labels(edges)
+    fig,ax,gr = show_graph_with_labels(edges,p)
+
+    nodes=gr.nodes()
+    for i in edges:
+        r = np.random.rand()
+        if r<p:
+            r1=np.random.randint(0,len(nodes))
+            r2=np.random.randint(0,len(nodes))
+            if not((r1,r2) in edges):
+                gr.add_edge(r1, r2)
+
+    pos = nx.shell_layout(gr)
+    fig, ax = plt.subplots()
+    nx.draw(gr, pos, node_size=10, node_color='blue', cmap='jet', with_label=True)
     plt.show()
+
+def PerferentialGrowth(m,n0,networkSize):
+    edges = np.zeros([networkSize, networkSize])
+    for i in range(c):
+        np.fill_diagonal(edges[i + 1:], 1)
+        np.fill_diagonal(edges[:, i + 1:], 1)
+
 
 if __name__ == "__main__":
     # Method for excercise 1
-    numberOfNodes=20
-    p=0.01
+    numberOfNodes=200
+    p=0.1
     c=2
     #ErdosRenyi(8000,0.01)
     # show_graph_with_labels(adjacency)
