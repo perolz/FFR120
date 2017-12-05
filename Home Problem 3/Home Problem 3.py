@@ -89,11 +89,38 @@ def SmallWorld(n,p,c):
     nx.draw(gr, pos, node_size=10, node_color='blue', cmap='jet', with_label=True)
     plt.show()
 
-def PerferentialGrowth(m,n0,networkSize):
-    edges = np.zeros([networkSize, networkSize])
-    for i in range(c):
-        np.fill_diagonal(edges[i + 1:], 1)
-        np.fill_diagonal(edges[:, i + 1:], 1)
+def PerferentialGrowth(m,n0,p):
+    edges = np.zeros([n0, n0])
+
+    for i in range(n0):
+        for j in range(i+1):
+            r=np.random.rand()
+            if r<p:
+                edges[i][j]=1
+                edges[j][i]=1
+    np.fill_diagonal(edges, 0)
+    rows, cols = np.where(edges == 1)
+
+    nodes = set([n1 for n1 in rows] + [n2 for n2 in cols])
+    gr = nx.Graph()
+    for node in nodes:
+        gr.add_node(node)
+    for i in range(len(rows)):
+        gr.add_edge(rows[i], cols[i])
+
+    for i in range(100):
+        alreadyConnected = []
+        numberOfNodes=len(gr.nodes)
+        gr.add_node(numberOfNodes)
+        while len(alreadyConnected)<m:
+            #Ändra här. Ska inte vara random utan bero på fördelningen sedan innan
+            #Använd degree
+            r1=np.random.randint(0,numberOfNodes-1)
+            if not r1 in alreadyConnected:
+                gr.add_edge(numberOfNodes,r1)
+                alreadyConnected.append(r1)
+
+    print('hej')
 
 
 if __name__ == "__main__":
@@ -103,5 +130,6 @@ if __name__ == "__main__":
     c=2
     #ErdosRenyi(8000,0.01)
     # show_graph_with_labels(adjacency)
-    SmallWorld(numberOfNodes,p,c)
+    #SmallWorld(numberOfNodes,p,c)
+    PerferentialGrowth(10,30,0.2)
 
