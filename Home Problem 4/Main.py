@@ -31,6 +31,36 @@ def Modelarity(s,B,m):
     #   Q=Q+np.dot(eigenvectors[i],s)**2*eigenvalues[i]/(4*m)
     Q=1/(4*m)*s.dot(B.dot(s))
     return Q
+def Subgroup(group1,adjacency_matrix,B,degree_sorted,m):
+    numberInGroup1=len(group1)
+
+    adjacency_matrix_sub=np.zeros([numberInGroup1,numberInGroup1])
+    B_sub=np.zeros([numberInGroup1,numberInGroup1])
+    for i in range(numberInGroup1):
+        for j in range(numberInGroup1):
+            adjacency_matrix_sub[i][j] = adjacency_matrix[group1[i][0]][group1[j][0]]
+
+    degree_sub = [sum(x) for x in adjacency_matrix_sub[:]]
+    dg = sum(degree_sub)
+    for i in range(numberInGroup1):
+        for j in range(numberInGroup1):
+            if not i==j:
+                B_sub[i][j]=adjacency_matrix[group1[i][0]][group1[j][0]]-degree_sorted[group1[i][0]]*degree_sorted[group1[j][0]]/(2*m)
+            else:
+                B_sub[i][j] = adjacency_matrix[group1[i][0]][group1[j][0]] - degree_sorted[group1[i][0]] * degree_sorted[
+                    group1[j][0]]/(2*m)-(degree_sub[i]-degree_sorted[group1[i][0]]*dg/(2*m))
+
+    return (B_sub)
+
+def update(B_sub,m):
+    eigenvalues, eigenvectors = linalg.eig(B_sub)
+    #order = np.argsort(eigenvalues)[::-1]
+    maxValue = np.argmax(eigenvalues)
+    maxEigenvector = eigenvectors[:, maxValue]
+    s = np.where(maxEigenvector> 0, 1, -1)
+
+    Q=Modelarity(s,B_sub,m)
+    return (Q,s)
 
 if __name__ == "__main__":
 
@@ -53,15 +83,13 @@ if __name__ == "__main__":
     for i in range(len(rows)):
         gr.add_edge(rows[i], cols[i])
 
-    pos = nx.spring_layout(gr)
+    pos = nx.spectral_layout(gr)
     fig, ax = plt.subplots()
 
     nodes = gr.nodes()
     degree = gr.degree()
     degree_sorted = np.array([x[1] for x in degree])
     edges = gr.edges()
-
-    color = [degree[n] for n in nodes]
 
     m=1/2*np.sum(degree_sorted)
     kikj=np.outer(degree_sorted,degree_sorted)
@@ -71,46 +99,33 @@ if __name__ == "__main__":
     eigenvalues,eigenvectors=linalg.eig(B)
     order=np.argsort(eigenvalues)[::-1]
     maxValue=np.argmax(eigenvalues)
-    sortedEigenvalues=[]
-    sortedEigenvectors=[]
+
     eigenValues = eigenvalues[maxValue]
     eigenVectors = eigenvectors[:, maxValue]
     s=np.where(eigenVectors>0,1,-1)
 
     s=Kernighan_Lin(s, B, m)
+    Q=Modelarity(s, B, m)
+
+
     group1=np.argwhere(s<0)
     group2=np.argwhere(s>0)
-    numberInGroup1=len(group1)
-    numberInGroup2=len(group2)
+    B_sub=Subgroup(group1,adjacency_matrix,B,degree_sorted,m)
+    B_sub2=Subgroup(group2,adjacency_matrix,B,degree_sorted,m)
+    color=np.zeros(len(eigenvalues))
 
-    adjacency_matrix_sub=np.zeros([numberInGroup1,numberInGroup1])
+    (Q1,s1)=update(B_sub,m)
+    (Q2,s2)=update(B_sub2,m)
 
-    for i in range(numberInGroup1):
-        for j in range(numberInGroup1):
-            adjacency_matrix_sub[i][j]=adjacency_matrix[group1[i][0]][group1[j][0]]
+    if Q1>0:
+        s1 = Kernighan_Lin(s1, B_sub, m)
+        for i in range(len(group1)):
+            if s1[i]>0:
+                color[group1[i][0]]=1
+            else:
+                color[group1[i][0]]=2
+    print(Q1+Q)
 
-
-    degree_sub=[sum(x) for x in adjacency_matrix_sub[:]]
-    B_sub=B
-    dg=sum(degree_sub)
-    for i in range(numberInGroup1):
-        B_sub[group1[i][0]][group1[i][0]]=B_sub[group1[i][0]][group1[i][0]]-(degree_sub[i]-degree_sorted[group1[i]][0]*dg/(2*m))
-
-    adjacency_matrix_sub2 = np.zeros([numberInGroup2, numberInGroup2])
-
-    for i in range(numberInGroup2):
-        for j in range(numberInGroup2):
-            adjacency_matrix_sub2[i][j] = adjacency_matrix[group2[i][0]][group2[j][0]]
-
-    degree_sub = [sum(x) for x in adjacency_matrix_sub2[:]]
-    B_sub2 = B
-    dg = sum(degree_sub)
-    for i in range(numberInGroup1):
-        B_sub2[group2[i][0]][group2[i][0]] = B_sub2[group2[i][0]][group2[i][0]] - (
-        degree_sub[i] - degree_sorted[group2[i]][0] * dg / (2 * m))
-
-    print(Modelarity(s,B_sub2,m))
-    print(Modelarity(s,B_sub,m))
-    nx.draw(gr, pos, node_size=10, node_color=s, cmap='jet', with_label=True)
+    nx.draw(gr, pos, node_size=10, node_color=color, cmap='jet', with_label=True)
 
     plt.show()
