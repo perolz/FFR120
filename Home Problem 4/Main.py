@@ -83,7 +83,7 @@ if __name__ == "__main__":
     for i in range(len(rows)):
         gr.add_edge(rows[i], cols[i])
 
-    pos = nx.spectral_layout(gr)
+    pos = nx.spring_layout(gr)
     fig, ax = plt.subplots()
 
     nodes = gr.nodes()
@@ -119,6 +119,7 @@ if __name__ == "__main__":
 
     if Q1>0:
         s1 = Kernighan_Lin(s1, B_sub, m)
+        Qtmp=Modelarity(s1,B_sub,m)
         for i in range(len(group1)):
             if s1[i]>0:
                 color[group1[i][0]]=1
@@ -127,5 +128,5 @@ if __name__ == "__main__":
     print(Q1+Q)
 
     nx.draw(gr, pos, node_size=10, node_color=color, cmap='jet', with_label=True)
-
+    plt.text(-0.9,1.2,'Modilarity \n %1.6f' %(Q1+Q))
     plt.show()
